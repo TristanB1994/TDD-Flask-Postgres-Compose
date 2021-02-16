@@ -1,5 +1,8 @@
-FROM python:3
+FROM python:3 as BASE
 
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH=$VIRTUAL_ENV/bin:$PATH
 ENV PYTHONUNBUFFERED 1
 
 RUN mkdir /opt/code
@@ -8,3 +11,9 @@ WORKDIR /opt/code
 
 ADD requirements /opt/requirements
 RUN pip install -r /opt/requirements/development.txt
+
+FROM BASE as RUN 
+
+COPY --from=BASE /opt/venv /opt/venv 
+ENV PATH="/opt/venv/bin:$PATH"
+
