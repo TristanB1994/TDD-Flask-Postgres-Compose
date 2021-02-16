@@ -66,6 +66,7 @@ def flask(subcommand):
 
 def docker_compose_cmdline(commands_string=None):
     config = os.getenv("APPLICATION_CONFIG")
+
     configure_app(config)
 
     compose_file = docker_compose_file(config)
@@ -110,7 +111,7 @@ def run_sql(statements):
             port=os.getenv("POSTGRES_PORT"),
         )
     except Exception as error:
-        print(f"Didn't connect to DB")
+        print(f"Didn't connect to DB, check active venv")
         print(f"error: {error}")
 
 
@@ -174,6 +175,7 @@ def scenario():
 def up(name):
     os.environ["APPLICATION_CONFIG"] = f"scenario_{name}"
     config = os.getenv("APPLICATION_CONFIG")
+    print(f"config: {config}")
 
     scenario_config_source_file = app_config_file("scenario")
     scenario_config_file = app_config_file(config)
@@ -185,9 +187,11 @@ def up(name):
     scenario_docker_source_file = docker_compose_file("scenario")
     scenario_docker_file = docker_compose_file(config)
 
+
     if not os.path.isfile(scenario_docker_source_file):
         raise ValueError(f"File {scenario_docker_source_file} doesn't exist")
     shutil.copy(docker_compose_file("scenario"), scenario_docker_file)
+
 
     configure_app(f"scenario_{name}")
 
@@ -214,13 +218,13 @@ def up(name):
         scenario = importlib.import_module(scenario_module)
         scenario.run()
 
-    cmdline = " ".join(
-        docker_compose_cmdline(
-            "exec db psql -U {} -d {}".format(
-                os.getenv("POSTGRES_USER"), os.getenv("APPLICATION_DB")
-            )
-        )
-    )
+    docker_output_json = subprocess.check_output(['docker','ps',"--format='{{ json .Names}}'"])
+    docker_startup_names = docker_output_json.decode('unicode_escape').split('"')
+
+    scenario_db_name = [ x for x in docker_startup_names if config and 'db' in x ][0]       
+
+    cmdline = f"docker exec -it {scenario_db_name} psql -U {os.getenv('POSTGRES_USER')} -d {os.getenv('APPLICATION_DB')}"
+
     print("Your scenario is ready. If you want to open a SQL shell run")
     print(cmdline)
 
