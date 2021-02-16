@@ -8,10 +8,9 @@
       "value": "development"
     },
     {
-        "name": "FLASK_APP",
-        "value": "application/wsgi.py"
+      "name": "FLASK_APP",
+      "value": "application/wsgi.py"
     },
-    
     
     {
       "name": "POSTGRES_DB",
